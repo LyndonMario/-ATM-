@@ -1,0 +1,202 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include "account.h"
+#include <string.h>
+#include <stdlib.h>
+#include <strings.h>
+#include "msg_queue.h"
+#include "signal.h"
+#include "tool.h"
+
+static int msg_snd_id;
+static int msg_rcv_id;
+static pid_t sub_pid[8];
+
+
+void sigint_close(int signum)
+{
+	msgctl(msg_snd_id,IPC_RMID,NULL);
+	msgctl(msg_rcv_id,IPC_RMID,NULL);
+
+	int i;
+	for(i=0;i < 8;i++)
+	{
+		kill(sub_pid[i],SIGINT);
+	}
+	exit(0);
+
+}
+
+
+
+int main()
+{
+	signal(SIGINT,sigint_close);
+	
+	init_id(ID_PATH,20180727);
+
+	msg_snd_id = get_snd_msg();
+	msg_rcv_id = get_rcv_msg();
+
+	sub_pid[0] = vfork();
+
+	if(0 == sub_pid[0])
+	{
+		execl("open","open",NULL);
+	}
+
+	
+	sub_pid[1] = vfork();
+	if(0 == sub_pid[1])
+	{
+		execl("destroy","destroy",NULL);
+	}
+
+	
+	
+	sub_pid[2] = vfork();
+	if(0 == sub_pid[2])
+	{
+		execl("login","login",NULL);
+	}
+	
+
+	wait();
+}
+
+
+
+
+/*
+
+//服务器处理主函数
+int server(key_t key,account data[100])
+{
+	int msg_id = msgget(key,0777);
+	msgbuf buf = {};//存放消息信息的结构体
+
+	while(1)
+	{
+		//接收消息队列中的第一个消息
+		if(-1 == msgrcv(msg_id,&buf,sizeof(buf.mtext),0,0))
+		{
+			perror("msgrcv");
+			exit(-1);
+		}
+		
+
+		switch(buf.mtype)
+		{
+			case 1:
+			{
+				printf("%s \n",buf.mtext);
+				strcpy(buf.mtext,"开户成功！！");
+				msgsnd(msg_id,&buf,sizeof(buf.mtext),0);
+				return 0;
+				break;
+			}
+
+			case 2:
+			{
+				printf("%s",buf.mtext);
+				strcpy(buf.mtext,"销户成功！！");
+				msgsnd(msg_id,&buf,sizeof(buf.mtext),0);
+				return 0;			
+				break;
+			}
+
+			case 3:
+			{
+				printf("%s",buf.mtext);
+				strcpy(buf.mtext,"登陆成功！！");
+				msgsnd(msg_id,&buf,sizeof(buf.mtext),0);
+				return 0;			
+				break;
+			}
+
+			case 4: //关机命令，服务器端先关闭
+			{
+				exit(0);	
+			}
+
+
+
+			case 5: //根据已经登陆帐号查询余额
+			{
+				strcpy(buf.mtext,"查询余额！！");
+				msgsnd(msg_id,&buf,sizeof(buf.mtext),0);
+				return 0;			
+				break;
+				
+				
+				break;
+			}
+
+
+
+			case 6: //转账
+			{
+				printf("%s",buf.mtext);
+				strcpy(buf.mtext,"转账成功！！");
+				msgsnd(msg_id,&buf,sizeof(buf.mtext),0);
+				return 0;			
+				
+				break;
+			}
+
+			case 7://取钱
+			{
+				printf("%s",buf.mtext);
+				strcpy(buf.mtext,"取钱成功！！");
+				msgsnd(msg_id,&buf,sizeof(buf.mtext),0);
+				return 0;			
+				
+				break;
+			}
+
+
+
+
+			case 8://存钱
+			{
+				printf("%s",buf.mtext);
+				strcpy(buf.mtext,"存钱成功！！");
+				msgsnd(msg_id,&buf,sizeof(buf.mtext),0);
+				return 0;			
+				
+				break;
+			}
+
+			case 9://修改密码
+			{
+				printf("%s",buf.mtext);
+				strcpy(buf.mtext,"修改密码成功！！");
+				msgsnd(msg_id,&buf,sizeof(buf.mtext),0);
+				return 0;			
+				
+				break;
+			}
+
+			case 10://退出登陆
+			{
+					
+				log_state = 0;	
+				strcpy(buf.mtext,"退出登陆成功！！");
+				msgsnd(msg_id,&buf,sizeof(buf.mtext),0);
+				return 0;			
+			}
+		} 
+	
+		bzero(&buf,sizeof(buf));
+	}
+}
+
+*/
+
+
+
+

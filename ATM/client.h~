@@ -1,0 +1,23 @@
+#ifndef CLIENT_H
+#define CLIENT_H
+
+typedef struct account
+{
+	char name[20];
+	char id[20];
+	char phone[20];
+	char number[20];
+	char password[20];
+	int  money;
+}account;
+
+
+
+
+
+
+
+
+
+
+#endif  //CLIENT_H

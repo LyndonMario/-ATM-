@@ -1,0 +1,12 @@
+all:
+	gcc client.c msg_queue.c tools.c get_keyboard.c -o client
+	gcc server.c msg_queue.c tools.c  get_keyboard.c -o server
+	gcc open.c msg_queue.c tools.c get_keyboard.c  -o open
+#	gcc save.c msg_queue.c  get_keyboard.c   -o save 
+#	gcc take.c msg_queue.c  get_keyboard.c  -o take
+	gcc query.c msg_queue.c  get_keyboard.c   -o query
+#	gcc transf.c msg_queue.c  get_keyboard.c    -o transf
+	gcc destroy.c msg_queue.c  get_keyboard.c   -o destroy
+clean:
+	rm client server open save take query transf destroy
+	

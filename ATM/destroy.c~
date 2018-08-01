@@ -1,0 +1,72 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/fcntl.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <sys/stat.h>
+#include <signal.h>
+#include "tool.h"
+#include "msg_queue.h"
+#include <string.h>
+#include <stdlib.h>
+
+
+static int msg_snd_id;
+static int msg_rcv_id;
+msgbuf_snd buf_snd;
+msgbuf_rcv buf_rcv;
+
+
+void open_acc(void)
+{
+	sprintf(buf_snd.data.number,"%d",get_id(ID_PATH));
+	char acc_path[255] = {};
+	sprintf(acc_path,"%s%s",ACCOUNT_PATH,buf_snd.data.number);
+
+	int fd = open(acc_path,O_WRONLY | O_CREAT | O_TRUNC,0644);
+
+	if(ERROR == fd)
+	{
+		perror("open");
+		return;
+	}
+
+	if(0 >= write(fd,&buf_snd.data,sizeof(buf_snd.data)))
+	{
+		perror("write");
+		return;
+	}
+
+	close(fd);
+	sprintf(buf_rcv.mtext,"开户成功，帐号：%s",buf_snd.data.number);
+
+}
+
+
+
+
+
+int main()
+{
+	msg_snd_id = get_snd_msg();
+	msg_rcv_id = get_rcv_msg();
+
+	while(true)
+	{
+		if(ERROR == msgrcv(msg_snd_id,&buf_snd,sizeof(buf_snd)-4,M_OPEN,0))
+		{
+			perror("msgrcv");
+		}
+		open_acc();
+
+		buf_rcv.mtype = buf_snd.pid;
+
+		if(ERROR == msgsnd(msg_rcv_id,&buf_rcv,sizeof(buf_rcv.mtext),0))
+		{
+			perror("msgsnd");
+		}
+
+	}
+
+}

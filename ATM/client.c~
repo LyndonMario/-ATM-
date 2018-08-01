@@ -1,0 +1,196 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include "tool.h"
+#include "account.h"
+#include <string.h>
+
+
+int log_state = 0;
+char login_number[20] = {};
+
+static int msg_snd_id;
+static int msg_rcv_id;
+
+//创建发送消息缓冲区，接受消息缓冲区
+static msgbuf_snd buf_snd;
+static msgbuf_rcv buf_rcv;
+
+
+void msg_send(void)
+{
+	if(ERROR == msgsnd(msg_snd_id,&buf_snd,sizeof(buf_snd)-4,0))
+	{
+		perror("msgsnd");
+		_exit(-1);
+	}
+}
+
+
+void msg_recv(void)
+{
+	if(ERROR == msgrcv(msg_rcv_id,&buf_rcv,sizeof(buf_rcv)-4,buf_rcv.mtype,0))
+	{
+		perror("msgrcv");
+		_exit(-1);
+	}
+
+	show_msg(buf_rcv.mtext,1.5);
+}
+
+
+
+
+
+void open()
+{
+	
+	printf("请输入姓名：");
+	scanf("%s",buf_snd.data.name);
+					
+
+	printf("请输入身份证号：");
+	scanf("%s",buf_snd.data.id);
+
+				
+	printf("请输入电话：");
+	scanf("%s",buf_snd.data.phone);
+
+
+	printf("请输入密码：");
+	get_pd(buf_snd.data.password,sizeof(buf_snd.data.password));
+				
+				
+	//设置发送消息类型,pid
+	buf_snd.mtype = M_OPEN;
+	buf_snd.pid = getpid();
+				
+}
+
+
+void destroy(void)
+{
+	printf("请输入要注销的帐号：");
+	get_str(buf_snd.data.number,sizeof(buf_snd.data.number));
+
+	printf("请输入要注销的用户名：");
+	get_str(buf_snd.data.name,sizeof(buf_snd.data.name));
+
+
+	printf("请输入密码：");
+	get_pd(buf_snd.data.password,sizeof(buf_snd.data.password));
+
+	buf_snd.mtype = M_DESTROY;
+
+}
+
+
+void login(void)
+{
+	printf("请输入帐号：");
+	get_str(buf_snd.data.number,sizeof(buf_snd.data.number));
+
+	
+	printf("请输入密码：");
+	get_pd(buf_snd.data.password,sizeof(buf_snd.data.password));
+	log_state = 1;
+	strcpy(login_number,buf_snd.data.number);
+	buf_snd.mtype  = M_LOGIN;
+}
+
+void exit_client(void)
+{
+	char str[20] = "系统正在退出..."；
+	show_msg(str,1);
+	buf_snd.mtype  = M_EXIT;
+	msg_send();
+	msg_recv();
+	kill(atoi(buf_rcv.mtext),SIGNAL);
+	exit();
+}
+
+
+void show_menu1(void)
+{
+	system("clear");
+		printf("欢迎来到杭州指针银行\n");
+		printf("1.开户\n");
+		printf("2.销户\n");
+		printf("3.登陆\n");
+		printf("4.关机\n");
+}
+
+
+void show_menu2(void)
+{
+	system("clear");
+		printf("欢迎来到杭州指针银行\n");
+		printf("1.查询账户余额\n");
+		printf("2.转帐\n");
+		printf("3.取钱\n");
+		printf("4.存钱\n");
+		printf("5.修改密码\n");
+		printf("6.退出登陆\n");
+
+}
+
+
+
+
+
+int main()
+{
+	msg_snd_id = get_snd_msg();
+	msg_rcv_id = get_rcv_msg();
+
+	buf_snd.pid = buf_rcv.mtype = getpid();
+
+	while(true)
+	{
+		if(!log_state)
+		{
+			show_menu1();
+			switch(get_cmd('1','4') - '0')
+			{
+				case M_OPEN: open(); break;
+				case M_DESTROY:destroy(); break;
+				case M_LOGIN:login();break;
+				case M_EXIT:exit_client();
+				
+			}
+			msg_send();
+			msg_recv();
+		}
+		else
+		{
+			show_menu2();
+			switch(get_cmd('1','6') - '0')
+			{
+				
+				case M_QUERY: break;
+				case M_TRANSF:  break;
+				case M_TAKE: break;
+				case M_SAVE:  break;
+				case M_MODIFY: break;
+				case M_LOGOUT:break;
+				
+			}
+			msg_send();
+			msg_recv();
+			
+		}	
+		
+	}
+}
+
+
+
+
+
+
+
+
+
